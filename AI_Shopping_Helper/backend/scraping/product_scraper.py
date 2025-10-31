@@ -4,9 +4,15 @@ Product scraper for extracting product information from e-commerce websites
 
 import requests
 from bs4 import BeautifulSoup
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
+# Selenium is optional; fall back gracefully if it's not installed
+try:
+    from selenium import webdriver
+    from selenium.webdriver.chrome.options import Options
+    from selenium.webdriver.common.by import By
+except Exception:  # ImportError or runtime issues
+    webdriver = None  # type: ignore
+    Options = None  # type: ignore
+    By = None  # type: ignore
 import re
 import json
 import time
@@ -23,11 +29,13 @@ class ProductScraper:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         })
         
-        # Chrome options for Selenium
-        self.chrome_options = Options()
-        self.chrome_options.add_argument('--headless')
-        self.chrome_options.add_argument('--no-sandbox')
-        self.chrome_options.add_argument('--disable-dev-shm-usage')
+        # Chrome options for Selenium (only if Selenium is available)
+        self.chrome_options = None
+        if Options is not None:
+            self.chrome_options = Options()
+            self.chrome_options.add_argument('--headless')
+            self.chrome_options.add_argument('--no-sandbox')
+            self.chrome_options.add_argument('--disable-dev-shm-usage')
     
     def scrape_product(self, url):
         """
@@ -138,13 +146,19 @@ class ProductScraper:
     def _scrape_generic(self, url):
         """Generic scraper for unknown platforms"""
         try:
-            # Use Selenium for JavaScript-heavy sites
-            driver = webdriver.Chrome(options=self.chrome_options)
-            driver.get(url)
-            time.sleep(3)  # Wait for page to load
-            
-            soup = BeautifulSoup(driver.page_source, 'html.parser')
-            driver.quit()
+            soup = None
+            if webdriver is not None and self.chrome_options is not None:
+                # Use Selenium for JavaScript-heavy sites when available
+                driver = webdriver.Chrome(options=self.chrome_options)
+                driver.get(url)
+                time.sleep(3)  # Wait for page to load
+                soup = BeautifulSoup(driver.page_source, 'html.parser')
+                driver.quit()
+            else:
+                # Fallback to simple requests + BeautifulSoup parsing
+                response = self.session.get(url, timeout=15)
+                response.raise_for_status()
+                soup = BeautifulSoup(response.text, 'html.parser')
             
             # Extract basic information
             name = self._extract_generic_name(soup)

@@ -34,17 +34,23 @@ class ProductDatabase:
             SELECT id, name, category, price, rating, platform, url, specs, 
                    quality_score, final_score, image_url, description
             FROM products 
-            WHERE category = ? 
-                AND price <= ? 
-                AND final_score >= ?
+            WHERE category = :category 
+                AND price <= :max_price 
+                AND final_score >= :min_score
             ORDER BY final_score DESC, price ASC
-            LIMIT ?
+            LIMIT :limit
             """
             
             # Allow some tolerance in score matching (±10%)
             min_score = target_score * 0.9
             
-            results = self.db.execute_query(query, (category, max_price, min_score, limit))
+            params = {
+                "category": category,
+                "max_price": max_price,
+                "min_score": min_score,
+                "limit": limit,
+            }
+            results = self.db.execute_query(query, params)
             
             # Process results
             alternatives = []
@@ -86,12 +92,12 @@ class ProductDatabase:
             SELECT id, name, category, price, rating, platform, url, 
                    quality_score, final_score, image_url
             FROM products 
-            WHERE category = ? 
+            WHERE category = :category 
             ORDER BY final_score DESC, price ASC
-            LIMIT ? OFFSET ?
+            LIMIT :limit OFFSET :offset
             """
             
-            results = self.db.execute_query(query, (category, limit, offset))
+            results = self.db.execute_query(query, {"category": category, "limit": limit, "offset": offset})
             return [dict(row) for row in results]
             
         except Exception as e:
@@ -112,26 +118,28 @@ class ProductDatabase:
             query = """
             INSERT INTO products (name, category, price, rating, platform, url, specs, 
                                 quality_score, final_score, image_url, description)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (:name, :category, :price, :rating, :platform, :url, :specs, :quality_score, :final_score, :image_url, :description)
+            RETURNING id
             """
             
             # Prepare data
-            insert_data = (
-                product_data.get('name', ''),
-                product_data.get('category', 'general'),
-                product_data.get('price', 0),
-                product_data.get('rating', 4.0),
-                product_data.get('platform', ''),
-                product_data.get('url', ''),
-                json.dumps(product_data.get('specs', {})),
-                product_data.get('quality_score', 0),
-                product_data.get('final_score', 0),
-                product_data.get('image_url', ''),
-                product_data.get('description', '')
-            )
-            
-            self.db.execute_update(query, insert_data)
-            return self.db.get_last_insert_id()
+            insert_data = {
+                'name': product_data.get('name', ''),
+                'category': product_data.get('category', 'general'),
+                'price': product_data.get('price', 0),
+                'rating': product_data.get('rating', 4.0),
+                'platform': product_data.get('platform', ''),
+                'url': product_data.get('url', ''),
+                'specs': json.dumps(product_data.get('specs', {})),
+                'quality_score': product_data.get('quality_score', 0),
+                'final_score': product_data.get('final_score', 0),
+                'image_url': product_data.get('image_url', ''),
+                'description': product_data.get('description', ''),
+            }
+            rows = self.db.execute_query(query, insert_data)
+            if rows:
+                return rows[0].get('id') if isinstance(rows[0], dict) else dict(rows[0]).get('id')
+            return None
             
         except Exception as e:
             logger.error(f"Error adding product: {str(e)}")
@@ -142,24 +150,24 @@ class ProductDatabase:
         try:
             # Build dynamic update query
             update_fields = []
-            params = []
+            params = {}
             
             allowed_fields = ['name', 'category', 'price', 'rating', 'platform', 'url', 
                             'specs', 'quality_score', 'final_score', 'image_url', 'description']
             
             for field in allowed_fields:
                 if field in product_data:
-                    update_fields.append(f"{field} = ?")
+                    update_fields.append(f"{field} = :{field}")
                     if field == 'specs':
-                        params.append(json.dumps(product_data[field]))
+                        params[field] = json.dumps(product_data[field])
                     else:
-                        params.append(product_data[field])
+                        params[field] = product_data[field]
             
             if not update_fields:
                 return False
             
-            params.append(product_id)  # Add product_id at the end
-            query = f"UPDATE products SET {', '.join(update_fields)} WHERE id = ?"
+            params['id'] = product_id
+            query = f"UPDATE products SET {', '.join(update_fields)} WHERE id = :id"
             
             rows_affected = self.db.execute_update(query, params)
             return rows_affected > 0
@@ -171,8 +179,8 @@ class ProductDatabase:
     def delete_product(self, product_id: int) -> bool:
         """Delete a product"""
         try:
-            query = "DELETE FROM products WHERE id = ?"
-            rows_affected = self.db.execute_update(query, (product_id,))
+            query = "DELETE FROM products WHERE id = :id"
+            rows_affected = self.db.execute_update(query, {"id": product_id})
             return rows_affected > 0
             
         except Exception as e:
@@ -187,10 +195,10 @@ class ProductDatabase:
                    quality_score, final_score, image_url, description,
                    created_at, updated_at
             FROM products 
-            WHERE id = ?
+            WHERE id = :id
             """
             
-            results = self.db.execute_query(query, (product_id,))
+            results = self.db.execute_query(query, {"id": product_id})
             
             if results:
                 product = dict(results[0])
@@ -215,17 +223,17 @@ class ProductDatabase:
             SELECT id, name, category, price, rating, platform, url, 
                    quality_score, final_score, image_url
             FROM products 
-            WHERE (name LIKE ? OR description LIKE ?)
+            WHERE (name LIKE :q OR description LIKE :q)
             """
             
-            params = [f"%{query}%", f"%{query}%"]
+            params = {"q": f"%{query}%"}
             
             if category:
-                search_query += " AND category = ?"
-                params.append(category)
+                search_query += " AND category = :category"
+                params["category"] = category
             
-            search_query += " ORDER BY final_score DESC, price ASC LIMIT ?"
-            params.append(limit)
+            search_query += " ORDER BY final_score DESC, price ASC LIMIT :limit"
+            params["limit"] = limit
             
             results = self.db.execute_query(search_query, params)
             return [dict(row) for row in results]
@@ -239,19 +247,21 @@ class ProductDatabase:
         try:
             query = """
             INSERT INTO user_feedback (product_id, user_rating, is_helpful, comments, user_ip)
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (:product_id, :user_rating, :is_helpful, :comments, :user_ip)
+            RETURNING id
             """
             
-            insert_data = (
-                feedback_data.get('product_id'),
-                feedback_data.get('rating'),
-                feedback_data.get('helpful'),
-                feedback_data.get('comments', ''),
-                feedback_data.get('user_ip', '')
-            )
-            
-            self.db.execute_update(query, insert_data)
-            return self.db.get_last_insert_id()
+            insert_data = {
+                'product_id': feedback_data.get('product_id'),
+                'user_rating': feedback_data.get('rating'),
+                'is_helpful': feedback_data.get('helpful'),
+                'comments': feedback_data.get('comments', ''),
+                'user_ip': feedback_data.get('user_ip', ''),
+            }
+            rows = self.db.execute_query(query, insert_data)
+            if rows:
+                return rows[0].get('id') if isinstance(rows[0], dict) else dict(rows[0]).get('id')
+            return None
             
         except Exception as e:
             logger.error(f"Error storing feedback: {str(e)}")
@@ -298,25 +308,25 @@ class ProductDatabase:
             query = """
             INSERT INTO products (name, category, price, rating, platform, url, specs, 
                                 quality_score, final_score, image_url, description)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (:name, :category, :price, :rating, :platform, :url, :specs, :quality_score, :final_score, :image_url, :description)
             """
             
             # Prepare data
             insert_data = []
             for product in products:
-                data = (
-                    product.get('name', ''),
-                    product.get('category', 'general'),
-                    product.get('price', 0),
-                    product.get('rating', 4.0),
-                    product.get('platform', ''),
-                    product.get('url', ''),
-                    json.dumps(product.get('specs', {})),
-                    product.get('quality_score', 0),
-                    product.get('final_score', 0),
-                    product.get('image_url', ''),
-                    product.get('description', '')
-                )
+                data = {
+                    'name': product.get('name', ''),
+                    'category': product.get('category', 'general'),
+                    'price': product.get('price', 0),
+                    'rating': product.get('rating', 4.0),
+                    'platform': product.get('platform', ''),
+                    'url': product.get('url', ''),
+                    'specs': json.dumps(product.get('specs', {})),
+                    'quality_score': product.get('quality_score', 0),
+                    'final_score': product.get('final_score', 0),
+                    'image_url': product.get('image_url', ''),
+                    'description': product.get('description', ''),
+                }
                 insert_data.append(data)
             
             rows_affected = self.db.execute_many(query, insert_data)

@@ -1,9 +1,7 @@
-# Git ignore file for AI Shopping Helper
-
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
+*.class
 *.so
 .Python
 build/
@@ -26,51 +24,45 @@ wheels/
 venv/
 env/
 ENV/
+.venv
 
-# Environment Variables
-.env
-
-# Database
-*.db
-*.sqlite3
-
-# Logs
-*.log
-logs/
-
-# IDE
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+chroma_db/
+data/chroma_db/
+
+# Logs
+*.log
+logs/
+bulk_products_*.log
+
+# Environment variables
+.env
+.env.local
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Chrome Driver
-chromedriver*
-
-# Temporary files
-tmp/
-temp/
-
-# Image uploads
-uploads/
-
-# Cache
-.cache/
+# Node
+node_modules/
+.next/
+out/
+build/
+dist/
 
 # Testing
-.pytest_cache/
 .coverage
 htmlcov/
+.pytest_cache/
 
-# Documentation builds
-docs/_build/
-
-# Jupyter Notebooks
-.ipynb_checkpoints/
-
-# Node modules (if any)
-node_modules/

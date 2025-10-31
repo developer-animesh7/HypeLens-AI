@@ -6,8 +6,6 @@ import logging
 import os
 from typing import List, Dict, Any, Optional
 from sentence_transformers import SentenceTransformer
-import chromadb
-from chromadb.config import Settings
 import sqlite3
 import json
 import numpy as np
@@ -47,9 +45,7 @@ class ProductRecommendationEngine:
             # If creation fails, continue; initialize_vector_db will handle errors
             pass
 
-        # Configuration: whether to use ChromaDB (default true)
-        use_chroma_env = os.getenv("USE_CHROMA", "true").lower()
-        self.use_chroma = use_chroma_env not in ("0", "false", "no")
+    
         
     def initialize_model(self):
         """Load the sentence transformer model"""
@@ -62,10 +58,19 @@ class ProductRecommendationEngine:
             raise e
     
     def initialize_vector_db(self):
-        """Initialize ChromaDB client and collection"""
+        """Initialize vector DB: try ChromaDB if enabled, else fall back to SQLite."""
         try:
             if self.use_chroma:
+                try:
+                    import importlib
+                    importlib.import_module("chromadb")  # Lazy probe; no hard dependency
+                except Exception as ie:
+                    logger.warning(f"ChromaDB not available ({ie}); falling back to SQLite for embeddings")
+                    self.use_chroma = False
+
+            if self.use_chroma:
                 logger.info("Initializing ChromaDB...")
+                import chromadb  # type: ignore  # validated via importlib above
                 self.chroma_client = chromadb.PersistentClient(path=self.chroma_db_path)
                 # Create or get collection
                 self.collection = self.chroma_client.get_or_create_collection(
@@ -73,22 +78,23 @@ class ProductRecommendationEngine:
                     metadata={"description": "Product embeddings for recommendation system"}
                 )
                 logger.info("ChromaDB initialized successfully")
-            else:
-                # Ensure SQLite table for embeddings exists
-                logger.info("Using SQLite for embeddings (USE_CHROMA=false)")
-                conn = sqlite3.connect(self.sqlite_db_path)
-                cursor = conn.cursor()
-                cursor.execute('''
-                    CREATE TABLE IF NOT EXISTS product_embeddings (
-                        product_id INTEGER PRIMARY KEY,
-                        embedding TEXT NOT NULL
-                    )
-                ''')
-                conn.commit()
-                conn.close()
-                logger.info("SQLite embeddings table ready")
+                return
+
+            # Ensure SQLite table for embeddings exists
+            logger.info("Using SQLite for embeddings")
+            conn = sqlite3.connect(self.sqlite_db_path)
+            cursor = conn.cursor()
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS product_embeddings (
+                    product_id INTEGER PRIMARY KEY,
+                    embedding TEXT NOT NULL
+                )
+            ''')
+            conn.commit()
+            conn.close()
+            logger.info("SQLite embeddings table ready")
         except Exception as e:
-            logger.error(f"Error initializing ChromaDB: {e}")
+            logger.error(f"Error initializing vector DB: {e}")
             raise e
     
     def get_products_from_db(self) -> List[Dict[str, Any]]:
@@ -357,19 +363,36 @@ class ProductRecommendationEngine:
             text_to_embed = f"{product['name']} - {product['description']}"
             embedding = self.model.encode([text_to_embed])
             
-            # Add to ChromaDB
-            self.collection.add(
-                embeddings=embedding.tolist(),
-                documents=[text_to_embed],
-                metadatas=[{
-                    'name': product['name'],
-                    'category': product['category'],
-                    'price': product['price'],
-                    'rating': product['rating'],
-                    'platform': product['platform']
-                }],
-                ids=[str(product_id)]
-            )
+            if self.use_chroma and self.collection is not None:
+                # Add to ChromaDB
+                self.collection.add(
+                    embeddings=embedding.tolist(),
+                    documents=[text_to_embed],
+                    metadatas=[{
+                        'name': product['name'],
+                        'category': product['category'],
+                        'price': product['price'],
+                        'rating': product['rating'],
+                        'platform': product['platform']
+                    }],
+                    ids=[str(product_id)]
+                )
+            else:
+                # Store embedding in SQLite
+                conn = sqlite3.connect(self.sqlite_db_path)
+                cursor = conn.cursor()
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS product_embeddings (
+                        product_id INTEGER PRIMARY KEY,
+                        embedding TEXT NOT NULL
+                    )
+                ''')
+                cursor.execute(
+                    'INSERT OR REPLACE INTO product_embeddings(product_id, embedding) VALUES(?, ?)',
+                    (int(product_id), json.dumps(embedding[0].tolist()))
+                )
+                conn.commit()
+                conn.close()
             
             logger.info(f"Added embedding for product {product_id}")
             

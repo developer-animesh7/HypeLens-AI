@@ -1,0 +1,94 @@
+{
+  "products": [
+    {
+      "id": 1,
+      "product_name": "Red Cotton Casual Shirt for Men",
+      "description": "Premium red cotton shirt with button-down collar, full sleeves, perfect for casual wear. Soft breathable fabric with regular fit.",
+      "brand": "Roadster",
+      "price": 499,
+      "product_url": "https://www.flipkart.com/roadster-red-shirt",
+      "image_url": "https://example.com/red-shirt-1.jpg"
+    },
+    {
+      "id": 2,
+      "product_name": "Men's Maroon Cotton Shirt",
+      "description": "Solid maroon casual shirt for men with spread collar and patch pocket. Comfortable cotton blend fabric ideal for everyday wear.",
+      "brand": "Peter England",
+      "price": 799,
+      "product_url": "https://www.myntra.com/peter-england-maroon-shirt",
+      "image_url": "https://example.com/maroon-shirt.jpg"
+    },
+    {
+      "id": 3,
+      "product_name": "Blue Denim Casual Shirt",
+      "description": "Classic blue denim shirt with long sleeves, button closure, and two chest pockets. Versatile casual wear for all seasons.",
+      "brand": "Wrangler",
+      "price": 1299,
+      "product_url": "https://www.amazon.in/wrangler-denim-shirt",
+      "image_url": "https://example.com/blue-denim-shirt.jpg"
+    },
+    {
+      "id": 4,
+      "product_name": "White Formal Shirt for Men",
+      "description": "Crisp white formal shirt with slim fit design, perfect for office and formal occasions. Premium cotton fabric with wrinkle-free finish.",
+      "brand": "Van Heusen",
+      "price": 1499,
+      "product_url": "https://www.flipkart.com/van-heusen-white-shirt",
+      "image_url": "https://example.com/white-formal-shirt.jpg"
+    },
+    {
+      "id": 5,
+      "product_name": "Red Checked Casual Shirt",
+      "description": "Stylish red and white checked casual shirt with button-down collar. Soft cotton material with comfortable regular fit for casual outings.",
+      "brand": "U.S. Polo Assn.",
+      "price": 899,
+      "product_url": "https://www.myntra.com/uspolo-checked-shirt",
+      "image_url": "https://example.com/red-checked-shirt.jpg"
+    },
+    {
+      "id": 6,
+      "product_name": "Black Cotton T-Shirt",
+      "description": "Basic solid black cotton crew neck t-shirt. Regular fit with short sleeves, ideal for casual everyday wear. Premium quality fabric.",
+      "brand": "Nike",
+      "price": 699,
+      "product_url": "https://www.amazon.in/nike-black-tshirt",
+      "image_url": "https://example.com/black-tshirt.jpg"
+    },
+    {
+      "id": 7,
+      "product_name": "Red Polo T-Shirt",
+      "description": "Casual red polo t-shirt with collar and button placket. Made from soft cotton blend, perfect for smart casual looks.",
+      "brand": "Roadster",
+      "price": 549,
+      "product_url": "https://www.flipkart.com/roadster-red-polo",
+      "image_url": "https://example.com/red-polo.jpg"
+    },
+    {
+      "id": 8,
+      "product_name": "Navy Blue Linen Shirt",
+      "description": "Premium navy blue linen shirt with full sleeves and button closure. Lightweight and breathable, perfect for summer.",
+      "brand": "Fabindia",
+      "price": 1799,
+      "product_url": "https://www.fabindia.com/navy-linen-shirt",
+      "image_url": "https://example.com/navy-linen-shirt.jpg"
+    },
+    {
+      "id": 9,
+      "product_name": "Red Printed Cotton Shirt",
+      "description": "Trendy red shirt with abstract print design. Comfortable cotton fabric with spread collar and full sleeves.",
+      "brand": "Jack & Jones",
+      "price": 1199,
+      "product_url": "https://www.myntra.com/jack-jones-red-printed",
+      "image_url": "https://example.com/red-printed-shirt.jpg"
+    },
+    {
+      "id": 10,
+      "product_name": "Red Cotton Henley T-Shirt",
+      "description": "Casual red henley t-shirt with button placket and short sleeves. Soft cotton fabric perfect for relaxed everyday style.",
+      "brand": "Puma",
+      "price": 799,
+      "product_url": "https://www.amazon.in/puma-red-henley",
+      "image_url": "https://example.com/red-henley.jpg"
+    }
+  ]
+}
