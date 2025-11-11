@@ -1173,8 +1173,8 @@ For issues, questions, or contributions:
 
 - **GitHub Issues:** [github.com/developer-animesh7/HypeLens-AI/issues](https://github.com/developer-animesh7/HypeLens-AI/issues)
 - **Documentation:** [Complete Technical Docs](DOCS/STEPS_1-5_COMPLETE_DOCUMENTATION.md)
-- **Email:** [Your contact email]
+- **Email:** [ ]
 
 ---
 
-**Built with ❤️ for Indian E-Commerce | Powered by AI & Open Source**
+**Built with ❤️ for Indian E-Commerce | Powered by AMITAVA**
