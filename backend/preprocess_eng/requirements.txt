@@ -1,0 +1,18 @@
+# Multilingual Semantic Search Pipeline - Dependencies
+# 
+# NOTE: All dependencies are now managed in the main project requirements.txt
+# Install from project root: pip install -r requirements.txt
+#
+# For reference, this module requires:
+# - langdetect==1.0.9          (Language detection)
+# - deep-translator==1.11.4    (Translation)
+# - spacy==3.8.7               (Tokenization, NER, lemmatization)
+# - nltk==3.9.2                (WordNet for synonyms)
+# - symspellpy==6.9.0          (Spell correction)
+# - pinecone>=7.0.0            (Vector database - REQUIRED)
+# - sentence-transformers      (Semantic embeddings)
+#
+# Additional setup required:
+# 1. Download spaCy model: python -m spacy download en_core_web_sm
+# 2. NLTK data is auto-downloaded on first use
+# 3. Set PINECONE_API_KEY in main .env file
