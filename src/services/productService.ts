@@ -1,6 +1,8 @@
 // Corrected import path to shared axios instance
 // Previously './api' which does not exist in services directory caused module-not-found 500 errors
 import api from '@/lib/api'
+import { searchRateLimiter, uploadRateLimiter, sanitizeTextInput, validateSearchQuery, validateImageFile } from '@/lib/validators'
+import { debounce } from '@/lib/utils'
 
 export interface Product {
   id: string
@@ -48,14 +50,30 @@ export async function searchProducts(
 /**
  * Semantic search using preprocessing engine (multilingual)
  * Uses the advanced 11-stage pipeline with intfloat/e5-base-v2 embeddings
+ * Includes input validation, sanitization, and rate limiting
  */
 export async function semanticSearch(
   query: string,
   top_k: number = 20,
   include_metadata: boolean = true
 ): Promise<SearchResponse> {
+  // Validate query
+  const validation = validateSearchQuery(query)
+  if (!validation.isValid) {
+    throw new Error(validation.error || 'Invalid search query')
+  }
+
+  // Check rate limit
+  if (!searchRateLimiter.checkLimit()) {
+    const resetTime = searchRateLimiter.getTimeUntilReset()
+    throw new Error(`Rate limit exceeded. Please wait ${Math.ceil(resetTime / 1000)} seconds.`)
+  }
+
+  // Sanitize input
+  const sanitizedQuery = sanitizeTextInput(query)
+
   const response = await api.post('/api/semantic-search', {
-    query,
+    query: sanitizedQuery,
     top_k,
     include_metadata,
   })
@@ -63,23 +81,37 @@ export async function semanticSearch(
   return {
     results: response.data.products || [],
     total: response.data.count || 0,
-    query: response.data.query_info?.original_query || query,
+    query: response.data.query_info?.original_query || sanitizedQuery,
     search_time: response.data.metrics?.total_latency_ms || 0,  // Use backend preprocessing time (accurate)
   }
 }
 
 /**
  * Visual search using image with CLIP
+ * Includes file validation, size checks, and rate limiting
  */
 export async function visualSearch(
   imageFile: File,
   category?: string,
   limit: number = 20
 ): Promise<VisualSearchResponse> {
+  // Validate image file
+  const validation = validateImageFile(imageFile)
+  if (!validation.isValid) {
+    throw new Error(validation.error || 'Invalid image file')
+  }
+
+  // Check rate limit
+  if (!uploadRateLimiter.checkLimit()) {
+    const resetTime = uploadRateLimiter.getTimeUntilReset()
+    throw new Error(`Upload rate limit exceeded. Please wait ${Math.ceil(resetTime / 1000)} seconds.`)
+  }
+
   const formData = new FormData()
   formData.append('file', imageFile)
   if (category) {
-    formData.append('category', category)
+    // Sanitize category input
+    formData.append('category', sanitizeTextInput(category))
   }
   formData.append('top_k', limit.toString())
 
