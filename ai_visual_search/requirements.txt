@@ -1,0 +1,24 @@
+# AI Visual Search Requirements
+# Minimal dependencies for: GroundingDINO + CLIP + Preprocessing
+
+# FastAPI
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# Deep Learning
+torch==2.5.1
+torchvision==0.20.1
+
+# GroundingDINO
+groundingdino-py==0.4.0
+
+# CLIP
+open-clip-torch==2.29.0
+
+# Image Processing
+Pillow==11.0.0
+numpy==2.2.1
+
+# Utilities
+python-decouple==3.8
